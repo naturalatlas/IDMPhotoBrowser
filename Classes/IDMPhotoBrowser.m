@@ -36,6 +36,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 
     // Buttons
     UIButton *_doneButton;
+    UIButton *_topLeftButton;
 
 	// Toolbar
 	UIToolbar *_toolbar;
@@ -102,6 +103,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 - (CGPoint)contentOffsetForPageAtIndex:(NSUInteger)index;
 - (CGRect)frameForToolbarAtOrientation:(UIInterfaceOrientation)orientation;
 - (CGRect)frameForDoneButtonAtOrientation:(UIInterfaceOrientation)orientation;
+- (CGRect)frameForTopLeftButtonAtOrientation:(UIInterfaceOrientation)orientation;
 - (CGRect)frameForCaptionView:(IDMCaptionView *)captionView atIndex:(NSUInteger)index;
 
 // Toolbar
@@ -135,7 +137,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 @implementation IDMPhotoBrowser
 
 // Properties
-@synthesize displayDoneButton = _displayDoneButton, displayToolbar = _displayToolbar, displayActionButton = _displayActionButton, displayCounterLabel = _displayCounterLabel, useWhiteBackgroundColor = _useWhiteBackgroundColor, doneButtonImage = _doneButtonImage;
+@synthesize displayDoneButton = _displayDoneButton, displayToolbar = _displayToolbar, displayActionButton = _displayActionButton, displayCounterLabel = _displayCounterLabel, useWhiteBackgroundColor = _useWhiteBackgroundColor, doneButtonImage = _doneButtonImage, topLeftButtonImage = _topLeftButtonImage;
 @synthesize leftArrowImage = _leftArrowImage, rightArrowImage = _rightArrowImage, leftArrowSelectedImage = _leftArrowSelectedImage, rightArrowSelectedImage = _rightArrowSelectedImage, actionButtonImage = _actionButtonImage, actionButtonSelectedImage = _actionButtonSelectedImage;
 @synthesize displayArrowButton = _displayArrowButton, actionButtonTitles = _actionButtonTitles;
 @synthesize arrowButtonsChangePhotosAnimated = _arrowButtonsChangePhotosAnimated;
@@ -168,6 +170,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 
         _displayDoneButton = YES;
         _doneButtonImage = nil;
+        _topLeftButtonImage = nil;
 
         _displayToolbar = YES;
         _displayActionButton = YES;
@@ -194,10 +197,13 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
         
         _statusBarHeight = 20.f;
         _doneButtonRightInset = 20.f;
+        _topLeftButtonLeftInset = 20.f;
         // relative to status bar and safeAreaInsets
         _doneButtonTopInset = 10.f;
+        _topLeftButtonTopInset = 10.f;
 
         _doneButtonSize = CGSizeMake(55.f, 26.f);
+        _topLeftButtonSize = CGSizeMake(55.f, 26.f);
 
 		if ([self respondsToSelector:@selector(automaticallyAdjustsScrollViewInsets)]) {
             self.automaticallyAdjustsScrollViewInsets = NO;
@@ -335,7 +341,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
             self.view.backgroundColor = [UIColor colorWithWhite:0 alpha:0];
             [UIView commitAnimations];
 
-            [self performSelector:@selector(doneButtonPressed:) withObject:self afterDelay:animationDuration];
+            [self performSelector:@selector(dismiss) withObject:self afterDelay:animationDuration];
         }
         else // Continue Showing View
         {
@@ -646,7 +652,18 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
         [_doneButton setImage:_doneButtonImage forState:UIControlStateNormal];
         _doneButton.contentMode = UIViewContentModeScaleAspectFit;
     }
+    
+    // Top Left Button
+    if (_topLeftButtonImage) {
+        _topLeftButton = [UIButton buttonWithType:UIButtonTypeCustom];
+        [_topLeftButton setFrame:[self frameForTopLeftButtonAtOrientation:currentOrientation]];
+        [_topLeftButton setAlpha:1.0f];
+        [_topLeftButton addTarget:self action:@selector(topLeftButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+        [_topLeftButton setImage:_topLeftButtonImage forState:UIControlStateNormal];
+        _topLeftButton.contentMode = UIViewContentModeScaleAspectFit;
+    }
 
+    
     UIImage *leftButtonImage = (_leftArrowImage == nil) ?
     [UIImage imageNamed:@"IDMPhotoBrowser.bundle/images/IDMPhotoBrowser_arrowLeft.png"]          : _leftArrowImage;
 
@@ -789,6 +806,9 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 
     // Done button
     _doneButton.frame = [self frameForDoneButtonAtOrientation:currentOrientation];
+    
+    // Top Left button
+    if (_topLeftButton) _topLeftButton.frame = [self frameForTopLeftButtonAtOrientation:currentOrientation];
 
 
     // Remember index
@@ -842,7 +862,9 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
     // Close button
     if(_displayDoneButton && !self.navigationController.navigationBar)
         [self.view addSubview:_doneButton];
-
+    
+    if (_topLeftButton) [self.view addSubview:_topLeftButton];
+        
     // Toolbar items & navigation
     UIBarButtonItem *fixedLeftSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace
                                                                                     target:self action:nil];
@@ -1156,6 +1178,12 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
     return rtn;
 }
 
+- (CGRect)frameForTopLeftButtonAtOrientation:(UIInterfaceOrientation)orientation {
+    CGRect rtn = CGRectMake(self.topLeftButtonLeftInset, self.topLeftButtonTopInset, self.topLeftButtonSize.width, self.topLeftButtonSize.height);
+    rtn = [self adjustForSafeArea:rtn adjustForStatusBar:true];
+    return rtn;
+}
+
 - (CGRect)frameForCaptionView:(IDMCaptionView *)captionView atIndex:(NSUInteger)index {
     CGRect pageFrame = [self frameForPageAtIndex:index];
 
@@ -1269,6 +1297,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
         [self.navigationController.navigationBar setAlpha:alpha];
         [_toolbar setAlpha:alpha];
         [_doneButton setAlpha:alpha];
+        if (_topLeftButton) [_topLeftButton setAlpha:alpha];
         for (UIView *v in captionViews) v.alpha = alpha;
     } completion:^(BOOL finished) {}];
 
@@ -1312,7 +1341,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 }
 - (void)handleSingleTap {
 	if (_dismissOnTouch) {
-		[self doneButtonPressed:nil];
+		[self dismiss];
 	} else {
 		[self setControlsHidden:![self areControlsHidden] animated:YES permanent:NO];
 	}
@@ -1334,11 +1363,12 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 
 #pragma mark - Buttons
 
-- (void)doneButtonPressed:(id)sender {
+- (void)dismiss
+{
     if ([_delegate respondsToSelector:@selector(willDisappearPhotoBrowser:)]) {
         [_delegate willDisappearPhotoBrowser:self];
     }
-
+    
     if (_senderViewForAnimation && _currentPageIndex == _initalPageIndex) {
         IDMZoomingScrollView *scrollView = [self pageDisplayedAtIndex:_currentPageIndex];
         [self performCloseAnimationWithScrollView:scrollView];
@@ -1347,6 +1377,16 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
         _senderViewForAnimation.hidden = NO;
         [self prepareForClosePhotoBrowser];
         [self dismissPhotoBrowserAnimated:YES];
+    }
+}
+
+- (void)doneButtonPressed:(id)sender {
+    [self dismiss];
+}
+
+- (void)topLeftButtonPressed:(id)sender {
+    if (_delegate && [_delegate respondsToSelector:@selector(photoBrowser:didPressTopLeftButtonAtIndex:)]) {
+        [_delegate photoBrowser:self didPressTopLeftButtonAtIndex:_currentPageIndex];
     }
 }
 

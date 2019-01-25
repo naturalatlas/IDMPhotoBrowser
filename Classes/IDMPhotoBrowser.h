@@ -20,6 +20,7 @@
 @optional
 - (void)willAppearPhotoBrowser:(IDMPhotoBrowser *)photoBrowser;
 - (void)willDisappearPhotoBrowser:(IDMPhotoBrowser *)photoBrowser;
+- (void)photoBrowser:(IDMPhotoBrowser *)photoBrowser didPressTopLeftButtonAtIndex:(NSUInteger)index;
 - (void)photoBrowser:(IDMPhotoBrowser *)photoBrowser didShowPhotoAtIndex:(NSUInteger)index;
 - (void)photoBrowser:(IDMPhotoBrowser *)photoBrowser didDismissAtPageIndex:(NSUInteger)index;
 - (void)photoBrowser:(IDMPhotoBrowser *)photoBrowser willDismissAtPageIndex:(NSUInteger)index;
@@ -48,9 +49,12 @@
 @property (nonatomic) BOOL displayDoneButton;
 @property (nonatomic) BOOL useWhiteBackgroundColor;
 @property (nonatomic, weak) UIImage *doneButtonImage;
+@property (nonatomic, weak) UIImage *topLeftButtonImage;
 @property (nonatomic, weak) UIColor *trackTintColor, *progressTintColor;
 @property (nonatomic, assign) CGFloat doneButtonRightInset, doneButtonTopInset;
 @property (nonatomic, assign) CGSize doneButtonSize;
+@property (nonatomic, assign) CGFloat topLeftButtonLeftInset, topLeftButtonTopInset;
+@property (nonatomic, assign) CGSize topLeftButtonSize;
 
 @property (nonatomic, weak) UIImage *scaleImage;
 
@@ -92,5 +96,7 @@
 
 // Get IDMPhoto at index
 - (id<IDMPhoto>)photoAtIndex:(NSUInteger)index;
+
+- (void) dismiss;
 
 @end
